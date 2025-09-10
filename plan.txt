@@ -1,0 +1,19 @@
+Marking and Uploading Attendance:
+
+Steps for the User 
+1. Enter date
+2. Select Hour
+3. Select Subject
+4. Mark Attendance of each student
+
+Steps for the frontend
+
+1. Store the date , hour and subject in the JSON 
+2. Then store the student id and Existence status(Present/Absent) in an array
+
+Steps for the backend 
+
+1. Take the date , hour and subject from the request and store it in respective fields
+2. Increment through the array in the JSON in the request. 
+  2.1 In each increment insert into  attendance Table and then insert attendance_id and other details to the attendance_detail Table.
+3. Then return Succes message 
