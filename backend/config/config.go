@@ -11,7 +11,7 @@ type Config struct {
 }
 
 func LoadConfig() *Config  {
-	godotenv.Load("../.env")
+	godotenv.Load("../../.env")
 
 	return &Config{
 		DatabaseURL: buildDataBaseURL(),
@@ -28,10 +28,10 @@ func getEnv(key, defaultValue string) string {
 
 func buildDataBaseURL() string {
 	user := getEnv("DB_USER", "root")
-	password := getEnv("DB_PASSWORD", "password")
+	password := getEnv("DB_PASSWORD", "jgm2632005")
 	host := getEnv("DB_HOST", "localhost")
 	port := getEnv("DB_PORT", "3306")
-	dbname := getEnv("DB_NAME", "notes_app")
+	dbname := getEnv("DB_NAME", "student_management")
 
 	return user + ":" + password + "@tcp(" + host + ":" + port + ")/" + dbname + "?parseTime=true"
 }

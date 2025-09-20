@@ -6,6 +6,9 @@ import (
 
 	"github.com/JacobGeorgeMathew/Student_Data_Management_System/config"
 	"github.com/JacobGeorgeMathew/Student_Data_Management_System/database"
+	"github.com/JacobGeorgeMathew/Student_Data_Management_System/internals/handlers"
+	"github.com/JacobGeorgeMathew/Student_Data_Management_System/internals/repositories"
+	"github.com/JacobGeorgeMathew/Student_Data_Management_System/internals/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -22,6 +25,12 @@ func main()  {
 	}
 	defer db.Close()
 
+	studRepo := repositories.NewStudRepo(db)
+
+	studService := services.NewAuthService(studRepo)
+
+	studHandler := handlers.NewAuthHandler(studService)
+
 	app := fiber.New()
 
 	app.Use(cors.New(cors.Config{
@@ -33,9 +42,18 @@ func main()  {
 
 	api := app.Group("/api")
 
-	stud := api.Group("/stud")
+	stud := api.Group("/student")
+	//teacher := api.Group("/teacher")
 
-	stud.Get("/home")
+	//teacher.Post("/register")
+	//teacher.Post("/login")
+
+	stud.Post("/register",studHandler.Register)
+	stud.Post("/login",studHandler.Login)
+
+	//teacher.Get("/home")
+
+	//stud.Get("/home")
 
 	fmt.Println("Server Started")
 	log.Fatal(app.Listen("localhost:5000"))

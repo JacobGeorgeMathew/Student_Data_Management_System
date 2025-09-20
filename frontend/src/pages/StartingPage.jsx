@@ -1,5 +1,6 @@
 import React from 'react';
 import { GraduationCap, Users, BarChart3, Shield, Clock, Database, ChevronRight, BookOpen, UserCheck } from 'lucide-react';
+import { Link } from 'react-router';
 
 export default function LandingPage() {
   return (
@@ -63,13 +64,16 @@ export default function LandingPage() {
                     Access your attendance records, view your academic progress, and stay updated with your educational journey.
                   </p>
                   <div className="card-actions justify-center w-full space-y-3">
-                    <button className="btn btn-primary btn-wide">
+                    <Link to="/student/login"><button className="btn btn-primary btn-wide">
                       <Users className="w-5 h-5 mr-2" />
-                      Student Sign In
+                      Student Login
                     </button>
+                    </Link>
+                    <Link to="/student/register">
                     <button className="btn btn-outline btn-wide">
-                      Student Sign Up
+                      Student Register
                     </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -89,10 +93,10 @@ export default function LandingPage() {
                   <div className="card-actions justify-center w-full space-y-3">
                     <button className="btn btn-secondary btn-wide">
                       <Shield className="w-5 h-5 mr-2" />
-                      Teacher Sign In
+                      Teacher Login
                     </button>
                     <button className="btn btn-outline btn-secondary btn-wide">
-                      Teacher Sign Up
+                      Teacher Register
                     </button>
                   </div>
                 </div>
