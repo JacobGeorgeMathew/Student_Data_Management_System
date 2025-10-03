@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Mail, Lock, Phone, BookOpen, Users, Calendar, Eye, EyeOff, UserPlus } from 'lucide-react';
 import api from '../../lib/axios';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router';
 
 const StudentSignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -17,6 +18,7 @@ const StudentSignupPage = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Mock data for dropdowns - in real app, fetch from API
   const branches = [
@@ -64,7 +66,7 @@ const StudentSignupPage = () => {
         password: formData.password
       });
       toast.success('Account created successfully!');
-      //window.location.href = '/signin';
+      navigate("/students/home");
     } catch (error) {
       console.error('Signup error:', error);
       toast.error(error.response?.data?.message || 'Failed to create account');

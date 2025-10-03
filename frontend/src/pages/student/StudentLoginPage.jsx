@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Mail, Lock, BookOpen, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, BookOpen } from 'lucide-react';
+import api from '../../lib/axios';
+import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router';
+import { useAuth } from '../../context/AuthContext';
 
 const StudentLoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -7,6 +11,9 @@ const StudentLoginPage = () => {
     email: '',
     password: ''
   });
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -16,22 +23,34 @@ const StudentLoginPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { email: formData.email, password: formData.password });
-    // Handle login logic
-    // Add validation logic here
-    if (!formData.email || !formData.password) {
-      alert('Please fill in all required fields');
-      return;
-    }
-  };
+    setLoading(true);
 
-  const resetForm = () => {
-    setFormData({
-      email: '',
-      password: ''
-    });
+    try {
+      const response = await api.post('/student/login', {
+        email: formData.email,
+        password: formData.password
+      });
+      
+      // Store token if your backend returns one
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      
+      // Update auth context
+      if (login) {
+        login(response.data.user, 'student');
+      }
+      
+      toast.success('Login successful!');
+      navigate('/students/home');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error(error.response?.data?.message || 'Invalid email or password');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,10 +63,10 @@ const StudentLoginPage = () => {
               <BookOpen className="w-8 h-8 text-primary-content" />
             </div>
             <h1 className="text-3xl font-bold text-base-content mb-2">
-              Welcome Back
+              Student Login
             </h1>
             <p className="text-base-content/70">
-              Sign in to your student account
+              Sign in to access your attendance records
             </p>
           </div>
 
@@ -72,6 +91,7 @@ const StudentLoginPage = () => {
                         placeholder="Enter your email"
                         className="input input-bordered w-full pl-12"
                         required
+                        autoComplete="email"
                       />
                     </div>
                   </div>
@@ -92,39 +112,35 @@ const StudentLoginPage = () => {
                         placeholder="Enter your password"
                         className="input input-bordered w-full pl-12 pr-12"
                         required
+                        autoComplete="current-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-base-content/40 hover:text-base-content"
+                        tabIndex={-1}
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
                   </div>
 
-                  {/* Forgot Password */}
+                  {/* Forgot Password Link */}
                   <div className="text-right">
-                    <button
-                      type="button"
-                      className="link link-primary text-sm"
-                      onClick={() => {
-                        // Handle forgot password logic
-                        console.log('Forgot password clicked');
-                      }}
-                    >
+                    <a href="/students/forgot-password" className="link link-primary text-sm">
                       Forgot password?
-                    </button>
+                    </a>
                   </div>
 
                   {/* Submit Button */}
                   <div className="form-control mt-6">
                     <button
                       type="submit"
-                      className="btn btn-primary btn-lg w-full"
+                      className={`btn btn-primary btn-lg w-full ${loading ? 'loading' : ''}`}
+                      disabled={loading}
                     >
-                      <LogIn className="w-5 h-5 mr-2" />
-                      Sign In
+                      {!loading && <LogIn className="w-5 h-5 mr-2" />}
+                      {loading ? 'Signing in...' : 'Sign In'}
                     </button>
                   </div>
                 </div>
@@ -134,7 +150,7 @@ const StudentLoginPage = () => {
               <div className="text-center mt-6 pt-4 border-t border-base-200">
                 <p className="text-sm text-base-content/60">
                   Don't have an account?{' '}
-                  <a href="/signup" className="link link-primary font-medium">
+                  <a href="/students/signup" className="link link-primary font-medium">
                     Sign up here
                   </a>
                 </p>

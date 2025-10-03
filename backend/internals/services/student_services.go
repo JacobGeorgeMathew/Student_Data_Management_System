@@ -69,9 +69,40 @@ func (s *authService) Register(req *models.StudRegisterRequest) (*models.StudAut
 }
 
 func (s *authService) Login(req *models.StudSigninRequest) (*models.StudAuthResponse, error) {
-	return  nil, nil
-}
+	// Get student by email
+	stud, err := s.studRepo.GetStudentByEmail(req.Email)
+	if err != nil {
+		return nil, errors.New("invalid credentials")
+	}
 
-func (s *authService) GetStudentByID(userID int) (*models.Student, error) {
-	return  nil, nil
+	// Check password
+	err = bcrypt.CompareHashAndPassword([]byte(stud.Password), []byte(req.Password))
+	if err != nil {
+		return nil, errors.New("invalid credentials")
+	}
+
+	// Generate JWT token
+	token, err := utils.GenerateJWT(stud.StudentId,"student")
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove password from response
+	stud.Password = ""
+
+	return &models.StudAuthResponse{
+		Token: token,
+		Stud:  *stud,
+	}, nil
+}
+// 🔥 NEW: Get student by ID for /me endpoint
+func (s *authService) GetStudentByID(studID int) (*models.Student, error) {
+	stud, err := s.studRepo.GetStudentByID(studID)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Remove password from response
+	stud.Password = ""
+	return stud, nil
 }

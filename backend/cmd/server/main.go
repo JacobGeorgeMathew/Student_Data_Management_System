@@ -7,6 +7,7 @@ import (
 	"github.com/JacobGeorgeMathew/Student_Data_Management_System/config"
 	"github.com/JacobGeorgeMathew/Student_Data_Management_System/database"
 	"github.com/JacobGeorgeMathew/Student_Data_Management_System/internals/handlers"
+	"github.com/JacobGeorgeMathew/Student_Data_Management_System/internals/middlewares"
 	"github.com/JacobGeorgeMathew/Student_Data_Management_System/internals/repositories"
 	"github.com/JacobGeorgeMathew/Student_Data_Management_System/internals/services"
 
@@ -50,6 +51,10 @@ func main()  {
 
 	stud.Post("/register",studHandler.Register)
 	stud.Post("/login",studHandler.Login)
+	stud.Post("/logout",studHandler.Logout)
+
+	stud_protected := api.Group("/",middlewares.CookieAuthMiddleware())
+	stud_protected.Get("/studDetails", studHandler.GetMe)
 
 	//teacher.Get("/home")
 

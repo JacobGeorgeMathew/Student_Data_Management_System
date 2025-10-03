@@ -1,8 +1,17 @@
 import React from 'react';
 import { GraduationCap, Users, BarChart3, Shield, Clock, Database, ChevronRight, BookOpen, UserCheck } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
+import { useAuth } from '../context/AuthContext';
 
 export default function LandingPage() {
+
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  if (user) {
+    navigate("/students/home",{replace: true});
+  }; // Already logged in
+
   return (
     <div className="min-h-screen bg-base-100" data-theme="forest">
       {/* Header */}
@@ -64,12 +73,12 @@ export default function LandingPage() {
                     Access your attendance records, view your academic progress, and stay updated with your educational journey.
                   </p>
                   <div className="card-actions justify-center w-full space-y-3">
-                    <Link to="/student/login"><button className="btn btn-primary btn-wide">
+                    <Link to="/students/login"><button className="btn btn-primary btn-wide">
                       <Users className="w-5 h-5 mr-2" />
                       Student Login
                     </button>
                     </Link>
-                    <Link to="/student/register">
+                    <Link to="/students/signup">
                     <button className="btn btn-outline btn-wide">
                       Student Register
                     </button>
