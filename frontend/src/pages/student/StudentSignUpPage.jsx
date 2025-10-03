@@ -3,8 +3,10 @@ import { User, Mail, Lock, Phone, BookOpen, Users, Calendar, Eye, EyeOff, UserPl
 import api from '../../lib/axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router';
+import { useAuth } from '../../context/AuthContext';
 
 const StudentSignupPage = () => {
+  const { refreshUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -66,6 +68,8 @@ const StudentSignupPage = () => {
         password: formData.password
       });
       toast.success('Account created successfully!');
+      // IMPORTANT: Refresh user data after signup
+      await refreshUser();
       navigate("/students/home");
     } catch (error) {
       console.error('Signup error:', error);

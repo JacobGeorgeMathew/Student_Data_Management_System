@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
 
 const StudentLoginPage = () => {
+  const { refreshUser } = useAuth(); // Get refreshUser from context
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -44,6 +45,8 @@ const StudentLoginPage = () => {
       }
       
       toast.success('Login successful!');
+      // IMPORTANT: Refresh user data after login
+      await refreshUser();
       navigate('/students/home');
     } catch (error) {
       console.error('Login error:', error);

@@ -22,16 +22,38 @@ export default function StudentHomePage() {
   const navigate = useNavigate();
   const [selectedSemester, setSelectedSemester] = useState('Semester 5');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
-  console.log(user);
+  const [homeLoading, setHomeLoading] = useState(false);
+  const { user,loading } = useAuth();
+  
+  // Show loading state while user data is being fetched
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-base-100 flex items-center justify-center">
+        <div className="text-center">
+          <span className="loading loading-spinner loading-lg text-primary"></span>
+          <p className="mt-4 text-base-content">Loading your data...</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Mock student data
+  // Show error if user is not loaded
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-base-100 flex items-center justify-center">
+        <div className="alert alert-error max-w-md">
+          <span>Failed to load user data. Please try logging in again.</span>
+        </div>
+      </div>
+    );
+  }
+
+   // Safe student data with fallbacks
   const studentData = {
-    name: user.name,
-    rollNumber: user.roll_number,
-    batch: user.batch_id,
-    branch: user.branch_id,
+    name: user.name || 'Student',
+    rollNumber: user.roll_number || 'N/A',
+    batch: user.batch_id || 'N/A',
+    branch: user.branch_id || 'N/A',
     currentSemester: 5,
     totalSemesters: 8
   };
@@ -189,15 +211,15 @@ export default function StudentHomePage() {
     console.log('LogOut attempt:');
 
     try {
-      setLoading(true);
+      setHomeLoading(true);
       const response = await api.post("student/logout",{});
       toast.success('LogOut successfully!');
-      navigate("/students/home");
+      navigate("/");
     } catch (error) {
        console.error('LogOut error:', error);
       toast.error(error.response?.data?.message || 'Failed to Logout');
     } finally {
-      setLoading(false)
+      setHomeLoading(false)
     }
   }
 

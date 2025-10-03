@@ -18,7 +18,7 @@ func NewAuthHandler(authService services.StudAuthService) *AuthHandler {
 }
 
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
-	fmt.Println("Request Arrived...")
+	fmt.Println("Request Arrived at Student Register...")
 	var req models.StudRegisterRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(400).JSON(fiber.Map{
@@ -100,7 +100,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 
 // 🔥 NEW: Get current user info (useful for frontend)
 func (h *AuthHandler) GetMe(c *fiber.Ctx) error {
-	fmt.Println("Request Arrived..")
+	fmt.Println("Request Arrived at student GetMe..")
 	studID, ok := c.Locals("userID").(int)
 	if !ok {
 		return c.Status(401).JSON(fiber.Map{
