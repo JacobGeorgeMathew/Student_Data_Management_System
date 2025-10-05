@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Change this endpoint to match your backend API
       // It should be the endpoint that returns current user details
-      const res = await api.get('/studDetails'); // or '/studDetails' if that's correct
+      const res = await api.get('/student/details'); // or '/studDetails' if that's correct
       console.log('Auth check response:', res);
       setUser(res.data.user || res.data); // Adjust based on your API response structure
     } catch (err) {
