@@ -2,7 +2,9 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"os"
+
 	//"strconv"
 	"time"
 
@@ -45,6 +47,7 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	})
 
 	if err != nil {
+		fmt.Println("Error occured in JWT validation")
 		return nil, err
 	}
 

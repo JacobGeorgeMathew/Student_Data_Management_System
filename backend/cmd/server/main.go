@@ -15,7 +15,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
-func main()  {
+func main() {
 	fmt.Println("Hello World")
 
 	cfg := config.LoadConfig()
@@ -26,11 +26,15 @@ func main()  {
 	}
 	defer db.Close()
 
+	// Student repositories, services, and handlers
 	studRepo := repositories.NewStudRepo(db)
-
 	studService := services.NewAuthService(studRepo)
-
 	studHandler := handlers.NewAuthHandler(studService)
+
+	// Teacher repositories, services, and handlers
+	teacherRepo := repositories.NewTeacherRepo(db)
+	teacherService := services.NewTeacherAuthService(teacherRepo)
+	teacherHandler := handlers.NewTeacherAuthHandler(teacherService)
 
 	app := fiber.New()
 
@@ -43,22 +47,25 @@ func main()  {
 
 	api := app.Group("/api")
 
+	// Student routes (PUBLIC - no middleware)
 	stud := api.Group("/student")
-	//teacher := api.Group("/teacher")
+	stud.Post("/register", studHandler.Register)
+	stud.Post("/login", studHandler.Login)
+	stud.Post("/logout", studHandler.Logout)
 
-	//teacher.Post("/register")
-	//teacher.Post("/login")
+	// Student protected routes (with middleware)
+	stud_protected := api.Group("/student", middlewares.CookieAuthMiddleware())
+	stud_protected.Get("/details", studHandler.GetMe)
 
-	stud.Post("/register",studHandler.Register)
-	stud.Post("/login",studHandler.Login)
-	stud.Post("/logout",studHandler.Logout)
+	// Teacher routes (PUBLIC - no middleware)
+	teacher := api.Group("/teacher")
+	teacher.Post("/register", teacherHandler.Register)
+	teacher.Post("/login", teacherHandler.Login)
+	teacher.Post("/logout", teacherHandler.Logout)
 
-	stud_protected := api.Group("/",middlewares.CookieAuthMiddleware())
-	stud_protected.Get("/studDetails", studHandler.GetMe)
-
-	//teacher.Get("/home")
-
-	//stud.Get("/home")
+	// Teacher protected routes (with middleware)
+	teacher_protected := api.Group("/teacher", middlewares.CookieAuthMiddleware())
+	teacher_protected.Get("/details", teacherHandler.GetMe)
 
 	fmt.Println("Server Started")
 	log.Fatal(app.Listen("localhost:5000"))
