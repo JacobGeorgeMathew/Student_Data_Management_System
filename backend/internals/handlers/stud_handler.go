@@ -10,11 +10,15 @@ import (
 )
 
 type AuthHandler struct {
-	authService services.StudAuthService
+	authService        services.StudAuthService
+	attendanceService  services.AttendanceService
 }
 
-func NewAuthHandler(authService services.StudAuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService services.StudAuthService, attendanceService services.AttendanceService) *AuthHandler {
+	return &AuthHandler{
+		authService:       authService,
+		attendanceService: attendanceService,
+	}
 }
 
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
@@ -108,26 +112,50 @@ func (h *AuthHandler) GetMe(c *fiber.Ctx) error {
 		})
 	}
 
-
 	stud, err := h.authService.GetStudentByID(studID)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{
 			"error": "User not found",
 		})
 	}
-  return c.JSON(fiber.Map{
+	return c.JSON(fiber.Map{
 		"user": stud,
 	})
 }
 
+// 🎓 NEW: Get student attendance details
+func (h *AuthHandler) GetAttendanceDetails(c *fiber.Ctx) error {
+	fmt.Println("Request Arrived at GetAttendanceDetails...")
+	
+	// Get student ID from middleware (set by CookieAuthMiddleware)
+	studID, ok := c.Locals("userID").(int)
+	if !ok {
+		return c.Status(401).JSON(fiber.Map{
+			"error": "Unauthorized",
+		})
+	}
+
+	// Fetch attendance details
+	attendanceDetails, err := h.attendanceService.GetStudentAttendanceDetails(studID)
+	if err != nil {
+		fmt.Println("Error fetching attendance:", err)
+		return c.Status(500).JSON(fiber.Map{
+			"error": "Failed to fetch attendance details",
+		})
+	}
+
+	// Return the attendance details grouped by semester
+	return c.JSON(attendanceDetails)
+}
+
 func (h *AuthHandler) setTokenCookie(c *fiber.Ctx, token string) {
 	c.Cookie(&fiber.Cookie{
-		Name:     "jwt_token",           // Cookie name
-		Value:    token,                 // JWT token
+		Name:     "jwt_token",                     // Cookie name
+		Value:    token,                           // JWT token
 		Expires:  time.Now().Add(24 * time.Hour), // 24 hours
-		HTTPOnly: true,                  // 🔒 Cannot be accessed by JavaScript (XSS protection)
-		Secure:   false,                  // 🔒 Only sent over HTTPS (set to false for development)
-		SameSite: "Strict",             // 🔒 CSRF protection
-		Path:     "/",                   // Available for all routes
+		HTTPOnly: true,                            // 🔒 Cannot be accessed by JavaScript (XSS protection)
+		Secure:   false,                           // 🔒 Only sent over HTTPS (set to false for development)
+		SameSite: "Strict",                        // 🔒 CSRF protection
+		Path:     "/",                             // Available for all routes
 	})
 }

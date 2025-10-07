@@ -46,7 +46,7 @@ const StudentLoginPage = () => {
       
       toast.success('Login successful!');
       // IMPORTANT: Refresh user data after login
-      await refreshUser();
+      await refreshUser("student");
       navigate('/students/home');
     } catch (error) {
       console.error('Login error:', error);

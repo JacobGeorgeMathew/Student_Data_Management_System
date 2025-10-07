@@ -23,7 +23,7 @@ export default function StudentHomePage() {
   const [selectedSemester, setSelectedSemester] = useState('Semester 5');
   const [showNotifications, setShowNotifications] = useState(false);
   const [homeLoading, setHomeLoading] = useState(false);
-  const { user,loading } = useAuth();
+  const { user, loading, setUser } = useAuth(); // Add setUser from context
   
   // Show loading state while user data is being fetched
   if (loading) {
@@ -212,16 +212,20 @@ export default function StudentHomePage() {
 
     try {
       setHomeLoading(true);
-      const response = await api.post("student/logout",{});
-      toast.success('LogOut successfully!');
-      navigate("/");
+      const response = await api.post("student/logout", {});
+      
+      // CRITICAL: Update the user state to null in AuthContext
+      setUser(null);
+      
+      toast.success('Logged out successfully!');
+      navigate("/", { replace: true });
     } catch (error) {
-       console.error('LogOut error:', error);
+      console.error('LogOut error:', error);
       toast.error(error.response?.data?.message || 'Failed to Logout');
     } finally {
-      setHomeLoading(false)
+      setHomeLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-base-100" data-theme="forest">
@@ -296,7 +300,10 @@ export default function StudentHomePage() {
                 <li><a><User className="w-4 h-4" /> View Profile</a></li>
                 <li><a><Settings className="w-4 h-4" /> Settings</a></li>
                 <li className="border-t border-base-300 mt-2">
-                  <a className="text-error" onClick={HandleLogOut}><LogOut className="w-4 h-4" /> Logout</a>
+                  <a className="text-error" onClick={HandleLogOut}>
+                    <LogOut className="w-4 h-4" /> 
+                    {homeLoading ? 'Logging out...' : 'Logout'}
+                  </a>
                 </li>
               </ul>
             </div>

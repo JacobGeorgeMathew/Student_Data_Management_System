@@ -8,13 +8,32 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Function to check authentication
-  const checkAuth = async () => {
+  const checkAuth = async (role) => {
+    let res = undefined;
     try {
-      // Change this endpoint to match your backend API
-      // It should be the endpoint that returns current user details
-      const res = await api.get('/student/details'); // or '/studDetails' if that's correct
-      console.log('Auth check response:', res);
-      setUser(res.data.user || res.data); // Adjust based on your API response structure
+      if (role === "student") {
+        res = await api.get('/student/details');
+      } else if (role === "teacher") {
+        res = await api.get('/teacher/details');
+      } else if (role === "no") {
+        console.log("Check Role!");
+        const roleRes = await api.get('/check/role');
+        if (roleRes.data.role === "student") {
+          res = await api.get('/student/details');
+        } else if (roleRes.data.role === "teacher") {
+          res = await api.get('/teacher/details');
+        } else {
+          console.log("invalid role response from backend");
+        }
+      } else {
+        console.log("No role or Invalid role");
+      }
+      if (res) {
+        console.log('Auth check response:', res);
+        setUser(res.data.user || res.data); // Adjust based on your API response structure
+      } else {
+        setUser(null);
+      }
     } catch (err) {
       console.error('Auth check failed:', err);
       setUser(null);
@@ -25,13 +44,13 @@ export const AuthProvider = ({ children }) => {
 
   // Run on app load
   useEffect(() => {
-    checkAuth();
+    checkAuth("no");
   }, []);
 
   // Function to manually refresh user data (call this after login/signup)
-  const refreshUser = async () => {
+  const refreshUser = async (role) => {
     setLoading(true);
-    await checkAuth();
+    await checkAuth(role);
   };
 
   return (

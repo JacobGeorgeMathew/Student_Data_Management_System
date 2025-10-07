@@ -29,7 +29,13 @@ func main() {
 	// Student repositories, services, and handlers
 	studRepo := repositories.NewStudRepo(db)
 	studService := services.NewAuthService(studRepo)
-	studHandler := handlers.NewAuthHandler(studService)
+	
+	// Attendance repository and service
+	attendanceRepo := repositories.NewAttendanceRepo(db)
+	attendanceService := services.NewAttendanceService(attendanceRepo)
+	
+	// Student handler with attendance service
+	studHandler := handlers.NewAuthHandler(studService, attendanceService)
 
 	// Teacher repositories, services, and handlers
 	teacherRepo := repositories.NewTeacherRepo(db)
@@ -47,6 +53,9 @@ func main() {
 
 	api := app.Group("/api")
 
+	roleCheck := api.Group("/check")
+	roleCheck.Get("/role", middlewares.RoleCheckMiddleware())
+
 	// Student routes (PUBLIC - no middleware)
 	stud := api.Group("/student")
 	stud.Post("/register", studHandler.Register)
@@ -56,6 +65,7 @@ func main() {
 	// Student protected routes (with middleware)
 	stud_protected := api.Group("/student", middlewares.CookieAuthMiddleware())
 	stud_protected.Get("/details", studHandler.GetMe)
+	stud_protected.Get("/attendance", studHandler.GetAttendanceDetails)
 
 	// Teacher routes (PUBLIC - no middleware)
 	teacher := api.Group("/teacher")

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { GraduationCap, Users, BarChart3, Shield, Clock, Database, ChevronRight, BookOpen, UserCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
@@ -7,10 +7,12 @@ export default function LandingPage() {
 
   const { user } = useAuth();
   const navigate = useNavigate();
-
+useEffect( () => {
   if (user) {
     navigate("/students/home",{replace: true});
-  }; // Already logged in
+  };
+},[] 
+)// Already logged in
 
   return (
     <div className="min-h-screen bg-base-100" data-theme="forest">
@@ -19,7 +21,7 @@ export default function LandingPage() {
         <div className="navbar-start">
           <div className="flex items-center space-x-2">
             <GraduationCap className="w-8 h-8 text-primary" />
-            <span className="text-xl font-bold text-base-content">EduTrack</span>
+              <span className="text-xl font-bold text-base-content">EduTrack</span>
           </div>
         </div>
         <div className="navbar-center hidden lg:flex">
@@ -93,20 +95,23 @@ export default function LandingPage() {
                   <div className="avatar placeholder mb-4">
                     <div className="bg-secondary text-secondary-content rounded-full w-16">
                       <UserCheck className="w-8 h-8" />
-                    </div>
+                      </div>
                   </div>
                   <h2 className="card-title text-2xl mb-2">Teacher Portal</h2>
                   <p className="text-base-content/70 mb-6">
                     Manage student records, mark attendance, generate reports, and streamline your classroom administration.
                   </p>
                   <div className="card-actions justify-center w-full space-y-3">
-                    <button className="btn btn-secondary btn-wide">
+                  <Link to="/teachers/login">  <button className="btn btn-secondary btn-wide">
                       <Shield className="w-5 h-5 mr-2" />
                       Teacher Login
                     </button>
+                    </Link>
+                    <Link to="/teachers/signup">
                     <button className="btn btn-outline btn-secondary btn-wide">
                       Teacher Register
                     </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -126,7 +131,7 @@ export default function LandingPage() {
               Built with modern technology and designed for educational excellence
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="card-body">
@@ -145,8 +150,8 @@ export default function LandingPage() {
                 <p className="text-base-content/70">
                   Automatic attendance percentage calculation and comprehensive reporting features.
                 </p>
-              </div>
-            </div>
+          </div>
+        </div>
 
             <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="card-body">
@@ -155,8 +160,8 @@ export default function LandingPage() {
                 <p className="text-base-content/70">
                   Secure login system with different access levels for teachers and students.
                 </p>
-              </div>
             </div>
+          </div>
 
             <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300">
               <div className="card-body">
@@ -165,7 +170,7 @@ export default function LandingPage() {
                 <p className="text-base-content/70">
                   Quick attendance marking and instant access to historical records.
                 </p>
-              </div>
+            </div>
             </div>
 
             <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300">
@@ -175,7 +180,7 @@ export default function LandingPage() {
                 <p className="text-base-content/70">
                   Comprehensive student and subject management with easy data organization.
                 </p>
-              </div>
+          </div>
             </div>
 
             <div className="card bg-base-100 shadow-lg hover:shadow-xl transition-all duration-300">
