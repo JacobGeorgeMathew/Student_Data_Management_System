@@ -69,7 +69,7 @@ const StudentSignupPage = () => {
       });
       toast.success('Account created successfully!');
       // IMPORTANT: Refresh user data after signup
-      await refreshUser();
+      await refreshUser("student");
       navigate("/students/home");
     } catch (error) {
       console.error('Signup error:', error);

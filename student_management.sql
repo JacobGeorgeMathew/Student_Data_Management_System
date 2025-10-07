@@ -12,34 +12,45 @@ CREATE TABLE subject (
     branch_id INT,
     FOREIGN KEY (branch_id) REFERENCES branch(branch_id)
 );
+CREATE TABLE subject_cluster (
+    subject_cluster_id INT PRIMARY KEY,
+    subject_id INT,
+    FOREIGN KEY (subject_id) REFERENCES subject(subject_id)
+);
 CREATE TABLE semester (
     semester_id INT PRIMARY KEY AUTO_INCREMENT,
     sem_num INT,
     branch_id INT,
-    subject_id INT,
+    subject_cluster_id INT,
     FOREIGN KEY (branch_id) REFERENCES branch(branch_id),
-    FOREIGN KEY (subject_id) REFERENCES subject(subject_id)
+    FOREIGN KEY (subject_cluster_id) REFERENCES subject_cluster(subject_cluster_id)
 );
 CREATE TABLE batch (
     batch_id INT PRIMARY KEY AUTO_INCREMENT,
     branch_id INT,
     name VARCHAR(100) NOT NULL,
     started YEAR,
+    FOREIGN KEY (branch_id) REFERENCES branch(branch_id)
+);
+CREATE TABLE class (
+    class_id INT PRIMARY KEY AUTO_INCREMENT,
+    batch_id INT,
     semester_id INT,
-    FOREIGN KEY (branch_id) REFERENCES branch(branch_id),
+    section VARCHAR(1),
+    FOREIGN KEY (batch_id) REFERENCES batch(batch_id),
     FOREIGN KEY (semester_id) REFERENCES semester(semester_id)
 );
 CREATE TABLE student (
     student_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     branch_id INT,
-    batch_id INT,
+    class_id INT,
     roll_number VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE,
     ph_no VARCHAR(20),
     password VARCHAR(255) NOT NULL,
     FOREIGN KEY (branch_id) REFERENCES branch(branch_id),
-    FOREIGN KEY (batch_id) REFERENCES batch(batch_id)
+    FOREIGN KEY (class_id) REFERENCES class(class_id)
 );
 CREATE TABLE teacher (
     teacher_id INT PRIMARY KEY AUTO_INCREMENT,
@@ -48,30 +59,30 @@ CREATE TABLE teacher (
     ph_no VARCHAR(20),
     password VARCHAR(255) NOT NULL
 );
-CREATE TABLE subject_cluster (
+CREATE TABLE subject_assigned (
     teacher_id INT,
     subject_id INT,
     PRIMARY KEY (teacher_id,subject_id),
     FOREIGN KEY (teacher_id) REFERENCES teacher(teacher_id),
     FOREIGN KEY (subject_id) REFERENCES subject(subject_id)
 ); 
-CREATE TABLE allotted_batch (
+CREATE TABLE allotted_class (
     teacher_id INT,
-    batch_id INT,
-    PRIMARY KEY (teacher_id,batch_id),
+    class_id INT,
+    PRIMARY KEY (teacher_id,class_id),
     FOREIGN KEY (teacher_id) REFERENCES teacher(teacher_id),
-    FOREIGN KEY (batch_id) REFERENCES batch(batch_id)
+    FOREIGN KEY (class_id) REFERENCES class(class_id)
 ); 
 CREATE TABLE attendance_resource (
     attendance_res_id INT PRIMARY KEY AUTO_INCREMENT,
-    batch_id INT,
+    class_id INT,
     subject_id INT,
     attendance_date DATE NOT NULL,
     hour TINYINT,
     marked_at DATETIME DEFAULT NOW() ON UPDATE NOW(),
-    FOREIGN KEY (batch_id) REFERENCES batch(batch_id),
+    FOREIGN KEY (class_id) REFERENCES class(class_id),
     FOREIGN KEY (subject_id) REFERENCES subject(subject_id),
-    UNIQUE KEY uq_session (batch_id, subject_id, attendance_date, hour)
+    UNIQUE KEY uq_session (class_id, subject_id, attendance_date, hour)
 );
 CREATE TABLE attendance_info (
     attendance_id INT PRIMARY KEY AUTO_INCREMENT,
