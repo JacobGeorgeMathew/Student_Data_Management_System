@@ -17,24 +17,35 @@ type MarkAttendance struct {
 	Students  []StudentAttendance `json:"students"`
 }
 
-// Models for fetching student attendance details
+// AttendanceSession represents a single attendance session with date and hour
+type AttendanceSession struct {
+	Date   string `json:"date" db:"attendance_date"`     // Format: "2006-01-02"
+	Hour   int    `json:"hour" db:"hour"`                // Hour number (1-8)
+	Status int    `json:"status" db:"status"`            // 1 = Present, 0 = Absent
+}
+
+// SubjectAttendanceDetail contains attendance details for a subject
 type SubjectAttendanceDetail struct {
-	ID           int     `json:"id" db:"subject_id"`
-	SubjectName  string  `json:"subjectName" db:"subject_name"`
-	SubjectCode  string  `json:"subjectCode" db:"subject_code"`
-	PresentDays  int     `json:"presentDays" db:"present_days"`
-	TotalDays    int     `json:"totalDays" db:"total_days"`
-	Percentage   float64 `json:"percentage"`
-	Status       string  `json:"status"`
+	ID          int                 `json:"id" db:"subject_id"`
+	SubjectName string              `json:"subjectName" db:"subject_name"`
+	SubjectCode string              `json:"subjectCode" db:"subject_code"`
+	PresentDays int                 `json:"presentDays"`
+	TotalDays   int                 `json:"totalDays"`
+	Percentage  float64             `json:"percentage"`
+	Status      string              `json:"status"`
+	Sessions    []AttendanceSession `json:"sessions"` // All attendance sessions
 }
 
+// AttendanceRecord is the raw data from database
 type AttendanceRecord struct {
-	SubjectID   int `db:"subject_id"`
-	SubjectName string `db:"subject_name"`
-	SubjectCode string `db:"subject_code"`
-	PresentDays int `db:"present_days"`
-	TotalDays   int `db:"total_days"`
-	SemesterNum int `db:"sem_num"`
+	SubjectID   int       `db:"subject_id"`
+	SubjectName string    `db:"subject_name"`
+	SubjectCode string    `db:"subject_code"`
+	SemesterNum int       `db:"sem_num"`
+	Date        *string   `db:"attendance_date"` // Nullable
+	Hour        *int      `db:"hour"`            // Nullable
+	Status      *int      `db:"status"`          // Nullable (1=Present, 0=Absent, NULL=no record)
 }
 
+// SemesterAttendanceResponse maps semester names to subject attendance details
 type SemesterAttendanceResponse map[string][]SubjectAttendanceDetail

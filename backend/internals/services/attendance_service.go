@@ -26,34 +26,68 @@ func (s *attendanceService) GetStudentAttendanceDetails(studentID int) (models.S
 		return nil, fmt.Errorf("failed to get attendance records: %w", err)
 	}
 
-	// Group records by semester and calculate percentages
+	// Group records by semester and subject
+	type SubjectKey struct {
+		SemesterNum int
+		SubjectID   int
+	}
+
+	subjectMap := make(map[SubjectKey]*models.SubjectAttendanceDetail)
+	
+	for _, record := range records {
+		key := SubjectKey{
+			SemesterNum: record.SemesterNum,
+			SubjectID:   record.SubjectID,
+		}
+
+		// Initialize subject detail if not exists
+		if _, exists := subjectMap[key]; !exists {
+			subjectMap[key] = &models.SubjectAttendanceDetail{
+				ID:          record.SubjectID,
+				SubjectName: record.SubjectName,
+				SubjectCode: record.SubjectCode,
+				PresentDays: 0,
+				TotalDays:   0,
+				Sessions:    []models.AttendanceSession{},
+			}
+		}
+
+		subject := subjectMap[key]
+
+		// Add session if date, hour, and status are present
+		if record.Date != nil && record.Hour != nil && record.Status != nil {
+			session := models.AttendanceSession{
+				Date:   *record.Date,
+				Hour:   *record.Hour,
+				Status: *record.Status,
+			}
+			subject.Sessions = append(subject.Sessions, session)
+			subject.TotalDays++
+			
+			if *record.Status == 1 {
+				subject.PresentDays++
+			}
+		}
+	}
+
+	// Calculate percentages and group by semester
 	response := make(models.SemesterAttendanceResponse)
 
-	for _, record := range records {
-		semesterKey := fmt.Sprintf("Semester %d", record.SemesterNum)
+	for key, subject := range subjectMap {
+		semesterKey := fmt.Sprintf("Semester %d", key.SemesterNum)
 
 		// Calculate percentage
 		var percentage float64
-		if record.TotalDays > 0 {
-			percentage = (float64(record.PresentDays) / float64(record.TotalDays)) * 100
+		if subject.TotalDays > 0 {
+			percentage = (float64(subject.PresentDays) / float64(subject.TotalDays)) * 100
 		}
 
-		// Determine status based on percentage
-		status := s.getAttendanceStatus(percentage)
-
-		// Create subject attendance detail
-		detail := models.SubjectAttendanceDetail{
-			ID:          record.SubjectID,
-			SubjectName: record.SubjectName,
-			SubjectCode: record.SubjectCode,
-			PresentDays: record.PresentDays,
-			TotalDays:   record.TotalDays,
-			Percentage:  roundToOneDecimal(percentage),
-			Status:      status,
-		}
+		// Set calculated fields
+		subject.Percentage = roundToOneDecimal(percentage)
+		subject.Status = s.getAttendanceStatus(percentage)
 
 		// Append to the appropriate semester
-		response[semesterKey] = append(response[semesterKey], detail)
+		response[semesterKey] = append(response[semesterKey], *subject)
 	}
 
 	return response, nil

@@ -23,22 +23,24 @@ func (r *attendanceRepo) GetStudentAttendanceByID(studentID int) ([]models.Atten
 	query := `
 		SELECT 
 			sub.subject_id,
-	  	sub.name AS subject_name,
+			sub.name AS subject_name,
 			sub.code AS subject_code,
-			COALESCE(SUM(CASE WHEN ai.status = 1 THEN 1 ELSE 0 END), 0) AS present_days,
-			COUNT(ai.attendance_id) AS total_days,
-			sem.sem_num
-		FROM  student_class stc
+			stc.sem_num,
+			DATE_FORMAT(ar.attendance_date, '%Y-%m-%d') AS attendance_date,
+			ar.hour,
+			ai.status
+		FROM student_class stc
 		INNER JOIN class c ON stc.class_id = c.class_id
 		INNER JOIN semester sem ON c.semester_id = sem.semester_id
 		INNER JOIN subject_cluster sc ON sem.subject_cluster_id = sc.subject_cluster_id
 		INNER JOIN subject_cluster_map scm ON sc.subject_cluster_id = scm.subject_cluster_id
 		INNER JOIN subject sub ON scm.subject_id = sub.subject_id
-		LEFT JOIN attendance_resource ar ON ar.class_id = c.class_id AND ar.subject_id = sub.subject_id
-		LEFT JOIN attendance_info ai ON ai.attendance_res_id = ar.attendance_res_id AND ai.student_id = stc.student_id
+		LEFT JOIN attendance_resource ar ON ar.class_id = c.class_id 
+			AND ar.subject_id = sub.subject_id
+		LEFT JOIN attendance_info ai ON ai.attendance_res_id = ar.attendance_res_id 
+			AND ai.student_id = stc.student_id
 		WHERE stc.student_id = ?
-		GROUP BY sub.subject_id, sub.name, sub.code, sem.sem_num
-		ORDER BY sem.sem_num DESC, sub.name ASC
+		ORDER BY stc.sem_num DESC, sub.name ASC, ar.attendance_date DESC, ar.hour DESC
 	`
 
 	rows, err := r.db.Query(query, studentID)
@@ -54,9 +56,10 @@ func (r *attendanceRepo) GetStudentAttendanceByID(studentID int) ([]models.Atten
 			&record.SubjectID,
 			&record.SubjectName,
 			&record.SubjectCode,
-			&record.PresentDays,
-			&record.TotalDays,
 			&record.SemesterNum,
+			&record.Date,
+			&record.Hour,
+			&record.Status,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan attendance record: %w", err)

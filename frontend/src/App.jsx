@@ -1,5 +1,5 @@
 import React from 'react'
-import { Route,Routes } from "react-router";
+import { Route, Routes } from "react-router";
 import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -10,6 +10,7 @@ import StartingPage from './pages/StartingPage';
 import StudentSignupPage from './pages/student/StudentSignUpPage';
 import StudentLoginPage from './pages/student/StudentLoginPage';
 import StudentHomePage from './pages/student/StudentHomePage';
+import AttendanceDetailPage from './pages/student/AttendanceDetailPage';
 
 //Teacher pages
 import TeacherHomePage from './pages/teacher/TeacherHomePage';
@@ -53,6 +54,14 @@ const App = () => {
             element={
               <ProtectedRoute role="student">
                 <StudentHomePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/students/attendance/:subjectId"
+            element={
+              <ProtectedRoute role="student">
+                <AttendanceDetailPage />
               </ProtectedRoute>
             }
           />

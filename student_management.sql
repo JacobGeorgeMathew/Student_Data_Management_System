@@ -66,7 +66,7 @@ CREATE TABLE student_class (
     PRIMARY KEY (student_id,class_id),
     FOREIGN KEY (student_id) REFERENCES student(student_id),
     FOREIGN KEY (class_id) REFERENCES class(class_id)
-)
+);
 CREATE TABLE teacher (
     teacher_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,

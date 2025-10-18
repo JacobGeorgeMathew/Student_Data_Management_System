@@ -23,8 +23,8 @@ func StudentDataInsert(db *sql.DB) {
 
 	// Number of dummy records
 	fmt.Println(count)
-	totalStudents := 25
-	totalStudents = totalStudents + count
+	totalStudents := 10
+	
 
 	// Determine starting index by inspecting existing roll_number values to avoid duplicates
 	// Assumes roll_number format "Rxxxx" where xxxx is a zero-padded integer
@@ -44,6 +44,8 @@ func StudentDataInsert(db *sql.DB) {
 			startIndex = maxNum + 1
 		}
 	}
+
+	totalStudents = totalStudents + startIndex
 
 	// Prepare insert statements
 	stmtStudent, err := db.Prepare(`
@@ -68,22 +70,22 @@ func StudentDataInsert(db *sql.DB) {
 	gofakeit.Seed(0)
 
 	batchID := 1
-	classID := 1
+	classID := 10
 
 	for i := startIndex; i <= totalStudents; i++ {
 
 		name := gofakeit.Name()
-		branchID := (i % 5) + 1
+		//branchID := (i % 5) + 1
 		//branchID := gofakeit.Number(1, 5)
-		//branchID := 1
-		if i%5 == 0 {
-			batchID = (batchID % 5) + 1
-		}
+		branchID := 1
+		// if i%5 == 0 {
+		// 	batchID = (batchID % 5) + 1
+		// }
 		//batchID := gofakeit.Number(1, 5)
 		//batchID := 2
-		if i%25 == 0 {
-			classID = (classID % 5) + 1
-		}
+		// if i%25 == 0 {
+		// 	classID = (classID % 5) + 1
+		// }
 		//classID := gofakeit.Number(1, 200)
 		//classID := 1
 		rollNumber := fmt.Sprintf("R%04d", i)
@@ -116,7 +118,7 @@ func StudentDataInsert(db *sql.DB) {
 		}
 
 		//fmt.Printf("Inserted student: %-25s | Email: %-25s | Password: %s\n", name, email, plainPassword)
-		fmt.Printf("Inserted %d student ", i)
+		fmt.Printf("Inserted %d student \n", i)
 	}
 
 	fmt.Println("✅ Dummy student data inserted successfully.")
@@ -274,8 +276,8 @@ func AttendanceDataInsert(db *sql.DB) {
 	gofakeit.Seed(0)
 
 	// Number of attendance sessions
-	totalSessions := 50
-	classID := 1
+	totalSessions := 100
+	classID := 10
 
 	for i := 1; i <= totalSessions; i++ {
 
@@ -286,7 +288,7 @@ func AttendanceDataInsert(db *sql.DB) {
 		// if i%5 == 0 {
 		// 	classID = (classID % 200) + 1
 		// }
-		classID = 167
+		//classID = 167
 		subjectID := gofakeit.Number(1, subjectCount)
 		//subjectID := 1
 		hour := gofakeit.Number(1, 6)
