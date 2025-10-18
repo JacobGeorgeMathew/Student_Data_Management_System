@@ -141,3 +141,31 @@ CREATE TABLE result (
     FOREIGN KEY (subject_id) REFERENCES subject(subject_id),
     FOREIGN KEY (student_id) REFERENCES student(student_id)
 );
+
+
+Write insert queries for adding datas into these tables. Insert atleast 5 courses into  branch table. Insert many subjects related to the above inserted courses into the subject table, Insert subjects as much as possible. Isert 8 semester for each branch into semester  table.Insert atleast 5 batches to batch table. Insert 2 or 3 sections for 
+
+Enter section, semester, branch , batch, subject , date 
+
+I wanted to add many dummy datas into student table. So write a code in GO for inserting many datas into the student table. "github.com/brianvoe/gofakeit/v6", use this package to generate random data. No need to randomly generate the email (since email should be unique ) instead use "example"+i+"@gmail.com" ( i is the index in the for loop). Use "bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost) " function of "golang.org/x/crypto/bcrypt" package to hash the password. student_password table is for storing the email and passwords ( actual password not the hashed password ) of dummy students.
+
+SELECT sub.subject_id,sub.name AS subject_name,sub.code AS subject_code,COALESCE(SUM(CASE WHEN ai.status = 1 THEN 1 ELSE 0 END), 0) AS present_days,COUNT(ai.attendance_id) AS total_days,sem.sem_num FROM student s INNER JOIN class c ON s.class_id = c.class_id INNER JOIN semester sem ON c.semester_id = sem.semester_id INNER JOIN subject_cluster sc ON sem.subject_cluster_id = sc.subject_cluster_id INNER JOIN subject_cluster_map scm ON sc.subject_cluster_id = scm.subject_cluster_id INNER JOIN subject sub ON scm.subject_id = sub.subject_id LEFT JOIN attendance_resource ar ON ar.class_id = c.class_id AND ar.subject_id = sub.subject_id LEFT JOIN attendance_info ai ON ai.attendance_res_id = ar.attendance_res_id AND ai.student_id = s.student_id WHERE s.student_id = ? GROUP BY sub.subject_id, sub.name, sub.code, sem.sem_num ORDER BY sem.sem_num DESC, sub.name ASC
+
+
+INSERT INTO student_class (student_id, class_id, sem_num)
+SELECT 
+    s.student_id,
+    c_prev.class_id,
+    sem_prev.sem_num
+FROM student s
+JOIN class c_curr ON s.class_id = c_curr.class_id
+JOIN semester sem_curr ON c_curr.semester_id = sem_curr.semester_id
+JOIN semester sem_prev 
+    ON sem_prev.branch_id = s.branch_id
+    AND sem_prev.sem_num <= sem_curr.sem_num   
+JOIN class c_prev 
+    ON c_prev.semester_id = sem_prev.semester_id
+    AND c_prev.section = c_curr.section       
+LEFT JOIN student_class sc
+    ON sc.student_id = s.student_id AND sc.class_id = c_prev.class_id
+WHERE sc.student_id IS NULL;                  

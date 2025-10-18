@@ -37,12 +37,19 @@ func (s *authService) Register(req *models.StudRegisterRequest) (*models.StudAut
 		return nil, err
 	}
 
+	classID,err1 := s.studRepo.GetClassID(req.Semester,req.BranchId,req.Section)
+
+	if err1 != nil {
+		return nil, err1
+	}
+
 	// Create user
 	stud := &models.Student{
 		Name: req.Name,
 		Email: req.Email,
 		RollNo: req.RollNo,
 		PhNo: req.PhNo,
+		ClassID: classID,
 		BatchId: req.BatchId,
 		BranchId: req.BranchId,
 		Password: string(hashedPassword),
