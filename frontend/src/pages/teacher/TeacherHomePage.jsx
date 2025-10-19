@@ -132,6 +132,10 @@ export default function TeacherHomePage() {
     return 'badge-error';
   };
 
+  const AttendanceMark = () => {
+    navigate("/teachers/mark-attendance");
+  }
+
   const HandleLogOut = async (e) => {
     e.preventDefault();
     try {
@@ -387,7 +391,7 @@ export default function TeacherHomePage() {
               <div className="card-body">
                 <h3 className="card-title text-lg mb-4">Quick Actions</h3>
                 <div className="space-y-2">
-                  <button className="btn btn-primary btn-block btn-sm justify-start">
+                  <button className="btn btn-primary btn-block btn-sm justify-start" onClick={AttendanceMark}>
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Mark Attendance
                   </button>
