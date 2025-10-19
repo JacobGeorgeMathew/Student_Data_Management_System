@@ -276,7 +276,7 @@ func AttendanceDataInsert(db *sql.DB) {
 	gofakeit.Seed(0)
 
 	// Number of attendance sessions
-	totalSessions := 100
+	totalSessions := 25
 	classID := 10
 
 	for i := 1; i <= totalSessions; i++ {
@@ -295,7 +295,7 @@ func AttendanceDataInsert(db *sql.DB) {
 		//hour := 1
 		//date := gofakeit.DateRange(time.Now().AddDate(0, 0, -30), time.Now()).Format("2006-01-02")
 
-		start := time.Date(2025, 9, 1, 0, 0, 0, 0, time.Local)
+		start := time.Date(2025, 8, 1, 0, 0, 0, 0, time.Local)
 		end := time.Date(2025, 9, 30, 23, 59, 59, 0, time.Local)
 		date := gofakeit.DateRange(start, end).Format("2006-01-02")
 
@@ -309,19 +309,22 @@ func AttendanceDataInsert(db *sql.DB) {
 		attendanceResID, _ := res.LastInsertId()
 
 		// Retrieve students belonging to that class
-		rows, err := db.Query("SELECT student_id FROM student WHERE class_id = ? and batch_id = ?", classID, batchID)
+		//rows, err := db.Query("SELECT student_id FROM student WHERE class_id = ? and batch_id = ?", classID, batchID)
+		rows, err := db.Query("SELECT student_id FROM student WHERE class_id = ? and batch_id = ? and student_id = 1168", classID, batchID)
 		if err != nil {
 			log.Printf("Failed to fetch students for class %d: %v", classID, err)
 			continue
 		}
 
 		for rows.Next() {
-			var studentID int
-			if err := rows.Scan(&studentID); err != nil {
-				log.Printf("Scan student failed: %v", err)
-				continue
-			}
+			var studentID int = 1168
 
+			// if err := rows.Scan(&studentID); err != nil {
+			// 	log.Printf("Scan student failed: %v", err)
+			// 	continue
+			// }
+			
+			
 			// Randomly decide attendance (80% present, 20% absent)
 			status := 1
 			if gofakeit.Number(1, 100) > 80 {

@@ -16,6 +16,7 @@ import AttendanceDetailPage from './pages/student/AttendanceDetailPage';
 import TeacherHomePage from './pages/teacher/TeacherHomePage';
 import TeacherSignupPage from './pages/teacher/TeacherSignupPage';
 import TeacherLoginPage from './pages/teacher/TeacherLoginPage';
+import MarkAttendancePage from './pages/teacher/MarkAttendancePage';
 
 const App = () => {
 
@@ -81,6 +82,14 @@ const App = () => {
               <ProtectedRoute role="teacher">
                 <TeacherHomePage />
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teachers/mark-attendance"
+            element={
+                <ProtectedRoute role="teacher">
+                  <MarkAttendancePage />
+                </ProtectedRoute>
             }
           />
           {/*<Route

@@ -169,3 +169,54 @@ JOIN class c_prev
 LEFT JOIN student_class sc
     ON sc.student_id = s.student_id AND sc.class_id = c_prev.class_id
 WHERE sc.student_id IS NULL;                  
+
+
+SELECT 
+			sub.subject_id,
+			sub.name AS subject_name,
+			sub.code AS subject_code,
+			stc.sem_num,
+			DATE_FORMAT(ar.attendance_date, '%Y-%m-%d') AS attendance_date,
+			ar.hour,
+			ai.status
+		FROM student_class stc
+		INNER JOIN class c ON stc.class_id = c.class_id
+		INNER JOIN semester sem ON c.semester_id = sem.semester_id
+		INNER JOIN subject_cluster sc ON sem.subject_cluster_id = sc.subject_cluster_id
+		INNER JOIN subject_cluster_map scm ON sc.subject_cluster_id = scm.subject_cluster_id
+		INNER JOIN subject sub ON scm.subject_id = sub.subject_id
+		LEFT JOIN attendance_resource ar ON ar.class_id = c.class_id 
+			AND ar.subject_id = sub.subject_id
+		LEFT JOIN attendance_info ai ON ai.attendance_res_id = ar.attendance_res_id 
+			AND ai.student_id = stc.student_id
+		WHERE stc.student_id = 1168
+		ORDER BY stc.sem_num DESC, sub.name ASC, ar.attendance_date DESC, ar.hour 
+
+
+
+Plan:
+
+1. The teacher Selects or enter the  required datas.Frontend sends these datas such as branch_id,batch_id,Semester_num , Section , date and hour to the backend, ( These datas are given in the frontend . Frontend provide the facility to selest these datas for the teacher ) . 
+2. Backend finds the semester_id using Semester_num and branch .
+3. Then it finds subject_cluster_id using semester_id, and finds the class_id using semester_id and section, ( subject_cluster_id can be used to find the set of subjects given to a particular class , class_id can be used to find the students studying in that class).
+
+4. Then backend sends back branch_id,batch_id,Semester_num , Section , date and hour and along with that backend sends the set of subjects and the class_id.
+
+5. Frontend receives these data and asks the teacher to choose one subject from the list.Teacher Selects one subject.
+6. Frontend then sends the subject_id and also sends branch_id,batch_id,Semester_num , Section , date, hour and class_id.
+7. Frontend receives this data then it uses these datas to check whether the attendance for this class for that particular session , for that subject has been marked 
+7.1 If yes then it sends all the attendance details along with the list of students in the class. It also sends the attendance_res_id in the attendance_resource table for that session.
+7.2 If not the backend sends the list of students along with branch_id,batch_id,Semester_num , Section , date, hour and class_id.It also sends the attendance_res_id as null value or empty string ( since attendance is not marked for that session , for that subject).
+
+8. Then frontend receives these data .
+8.1 If attendance_res_id is Present , it provides the facility to update the attendance
+8.2 else if attendance_res_id is not Present , then it provides facility to mark the attendance for the first time .
+9. After this the frontend sends all these datas to the backend.
+
+10. Backend receives the data from the frontend and checks for attendance_res_id .
+10.1 If attendance_res_id is Present , then it updates the existing attendance according to the recived data 
+10.2 else if attendance_res_id is not Present , then it adds the details to the database as new attendance.
+
+11. Then backend sends success message to the frontend.
+
+So this is my plan.So i am not telling this plan to you to write the code , instead i wanted you to thoroughly review this plan and tell me, is  there any issues in this plan. Suggest your opinions on this plan and tell me if there is  any improvements  needed . Then create a precise and correct prompt, to give it to an AI , so that it generates the proper code, for implementing this feature  in my project . Create seperate prompts for generating the backend code and frontend code .

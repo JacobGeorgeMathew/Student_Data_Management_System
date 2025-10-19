@@ -42,13 +42,18 @@ func main() {
 	teacherService := services.NewTeacherAuthService(teacherRepo)
 	teacherHandler := handlers.NewTeacherAuthHandler(teacherService)
 
+	// Mark Attendance repository, service, and handler
+	markAttendanceRepo := repositories.NewMarkAttendanceRepo(db)
+	markAttendanceService := services.NewMarkAttendanceService(markAttendanceRepo)
+	markAttendanceHandler := handlers.NewMarkAttendanceHandler(markAttendanceService)
+
 	app := fiber.New()
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:3000,http://localhost:5173", // Your frontend URLs
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
-		AllowCredentials: true, // 🔥 IMPORTANT: Allow cookies to be sent
+		AllowCredentials: true, // IMPORTANT: Allow cookies to be sent
 	}))
 
 	api := app.Group("/api")
@@ -76,6 +81,12 @@ func main() {
 	// Teacher protected routes (with middleware)
 	teacher_protected := api.Group("/teacher", middlewares.CookieAuthMiddleware())
 	teacher_protected.Get("/details", teacherHandler.GetMe)
+
+	// Attendance marking routes (PUBLIC for now - add middleware if needed)
+	attendance := api.Group("/attendance")
+	attendance.Post("/session-info", markAttendanceHandler.GetSessionInfo)
+	attendance.Post("/check-session", markAttendanceHandler.CheckSession)
+	attendance.Post("/submit", markAttendanceHandler.SubmitAttendance)
 
 	fmt.Println("Server Started")
 	log.Fatal(app.Listen("localhost:5000"))
