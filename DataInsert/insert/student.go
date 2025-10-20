@@ -12,117 +12,123 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func StudentDataInsert(db *sql.DB) {
+func StudentDataInsert(db *sql.DB, n int) {
+    // n = number of students per class per batch
 
-	// Query to count number of rows
-	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM student").Scan(&count)
-	if err != nil {
-		log.Fatalf("Query failed: %v", err)
-	}
+    // Get all batches and classes with their semester details
+    rows, err := db.Query(`
+        SELECT c.class_id, s.sem_num, s.branch_id, b.batch_id
+        FROM class c
+        JOIN semester s ON c.semester_id = s.semester_id
+        JOIN batch b ON b.branch_id = s.branch_id
+        ORDER BY s.branch_id, b.batch_id, s.sem_num, c.section
+    `)
+    if err != nil {
+        log.Fatalf("Failed to fetch class info: %v", err)
+    }
+    defer rows.Close()
 
-	// Number of dummy records
-	fmt.Println(count)
-	totalStudents := 10
-	
+    type ClassInfo struct {
+        ClassID   int
+        SemNum    int
+        BranchID  int
+        BatchID   int
+    }
 
-	// Determine starting index by inspecting existing roll_number values to avoid duplicates
-	// Assumes roll_number format "Rxxxx" where xxxx is a zero-padded integer
-	var maxRollStr sql.NullString
-	err = db.QueryRow("SELECT MAX(roll_number) FROM student").Scan(&maxRollStr)
-	if err != nil {
-		log.Fatalf("Failed to get max roll_number: %v", err)
-	}
+    var classes []ClassInfo
+    for rows.Next() {
+        var ci ClassInfo
+        if err := rows.Scan(&ci.ClassID, &ci.SemNum, &ci.BranchID, &ci.BatchID); err != nil {
+            log.Fatal(err)
+        }
+        classes = append(classes, ci)
+    }
 
-	startIndex := count + 1
-	if maxRollStr.Valid && len(maxRollStr.String) > 1 {
-		var maxNum int
-		// strip leading non-digit prefix (e.g., 'R') and parse remainder
-		_, err := fmt.Sscanf(maxRollStr.String, "R%04d", &maxNum)
-		if err == nil {
-			// start after the maximum existing number
-			startIndex = maxNum + 1
-		}
-	}
+    // Prepare insert statements
+    stmtStudent, err := db.Prepare(`
+        INSERT INTO student (name, branch_id, batch_id, class_id, roll_number, email, ph_no, password)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    if err != nil {
+        log.Fatalf("Prepare student failed: %v", err)
+    }
+    defer stmtStudent.Close()
 
-	totalStudents = totalStudents + startIndex
+    stmtStudentClass, err := db.Prepare(`
+        INSERT INTO student_class (student_id, class_id, sem_num)
+        VALUES (?, ?, ?)
+    `)
+    if err != nil {
+        log.Fatalf("Prepare student_class failed: %v", err)
+    }
+    defer stmtStudentClass.Close()
 
-	// Prepare insert statements
-	stmtStudent, err := db.Prepare(`
-		INSERT INTO student (name, branch_id, batch_id, class_id, roll_number, email, ph_no, password)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`)
-	if err != nil {
-		log.Fatalf("Prepare student failed: %v", err)
-	}
-	defer stmtStudent.Close()
+    // Random data
+    gofakeit.Seed(0)
 
-	stmtPwd, err := db.Prepare(`
-		INSERT INTO student_password (email, password)
-		VALUES (?, ?)
-	`)
-	if err != nil {
-		log.Fatalf("Prepare student_password failed: %v", err)
-	}
-	defer stmtPwd.Close()
+    // Get last roll number
+    var maxRollStr sql.NullString
+    _ = db.QueryRow("SELECT MAX(roll_number) FROM student").Scan(&maxRollStr)
 
-	// Random data generation
-	gofakeit.Seed(0)
+    startIndex := 1
+    if maxRollStr.Valid && len(maxRollStr.String) > 1 {
+        var maxNum int
+        if _, err := fmt.Sscanf(maxRollStr.String, "R%04d", &maxNum); err == nil {
+            startIndex = maxNum + 1
+        }
+    }
 
-	batchID := 1
-	classID := 10
+    rollIndex := startIndex
 
-	for i := startIndex; i <= totalStudents; i++ {
+    // Loop through all batches/classes
+    for _, ci := range classes {
+        for i := 0; i < n; i++ {
+            name := gofakeit.Name()
+            rollNumber := fmt.Sprintf("R%04d", rollIndex)
+            email := fmt.Sprintf("student%d@gmail.com", rollIndex)
+            phone := gofakeit.Phone()
+            plainPassword := "password"
 
-		name := gofakeit.Name()
-		//branchID := (i % 5) + 1
-		//branchID := gofakeit.Number(1, 5)
-		branchID := 1
-		// if i%5 == 0 {
-		// 	batchID = (batchID % 5) + 1
-		// }
-		//batchID := gofakeit.Number(1, 5)
-		//batchID := 2
-		// if i%25 == 0 {
-		// 	classID = (classID % 5) + 1
-		// }
-		//classID := gofakeit.Number(1, 200)
-		//classID := 1
-		rollNumber := fmt.Sprintf("R%04d", i)
-		email := fmt.Sprintf("example%d@gmail.com", i)
-		phone := gofakeit.Phone()
+            hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
 
-		// Generate random plain password
-		//plainPassword := gofakeit.Password(true, true, true, true, false, 10)
-		plainPassword := "password"
+            res, err := stmtStudent.Exec(name, ci.BranchID, ci.BatchID, ci.ClassID, rollNumber, email, phone, string(hashedPassword))
+            if err != nil {
+                log.Printf("Insert student failed for %s: %v", email, err)
+                continue
+            }
 
-		// Hash password
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
-		if err != nil {
-			log.Printf("Hash error for %s: %v", email, err)
-			continue
-		}
+            studentID, _ := res.LastInsertId()
 
-		// Insert into student
-		_, err = stmtStudent.Exec(name, branchID, batchID, classID, rollNumber, email, phone, string(hashedPassword))
-		if err != nil {
-			log.Printf("Insert student failed for %s: %v", email, err)
-			continue
-		}
+            // Insert into student_class for all previous semesters
+            prevClasses, err := db.Query(`
+                SELECT c.class_id, s.sem_num
+                FROM class c
+                JOIN semester s ON c.semester_id = s.semester_id
+                WHERE s.branch_id = ? AND s.sem_num < ?
+            `, ci.BranchID, ci.SemNum)
+            if err != nil {
+                log.Printf("Fetch previous classes failed: %v", err)
+                continue
+            }
 
-		// Insert into student_password (email + plain password)
-		_, err = stmtPwd.Exec(email, plainPassword)
-		if err != nil {
-			log.Printf("Insert student_password failed for %s: %v", email, err)
-			continue
-		}
+            for prevClasses.Next() {
+                var pcID, semNum int
+                prevClasses.Scan(&pcID, &semNum)
+                _, err := stmtStudentClass.Exec(studentID, pcID, semNum)
+                if err != nil {
+                    log.Printf("Insert into student_class failed: %v", err)
+                }
+            }
+            prevClasses.Close()
 
-		//fmt.Printf("Inserted student: %-25s | Email: %-25s | Password: %s\n", name, email, plainPassword)
-		fmt.Printf("Inserted %d student \n", i)
-	}
+            fmt.Printf("Inserted student %s for class %d (Sem %d, Batch %d)\n", rollNumber, ci.ClassID, ci.SemNum, ci.BatchID)
+            rollIndex++
+        }
+    }
 
-	fmt.Println("✅ Dummy student data inserted successfully.")
+    fmt.Println("✅ Successfully inserted students for all batches and classes.")
 }
+
 
 func TeacherDataInsert(db *sql.DB) {
 	// Get counts for class and subject tables
@@ -241,106 +247,153 @@ func TeacherDataInsert(db *sql.DB) {
 	fmt.Println("✅ Dummy teacher data inserted successfully.")
 }
 
-func AttendanceDataInsert(db *sql.DB) {
-	// Get counts
-	var classCount, subjectCount, studentCount int
-	if err := db.QueryRow("SELECT COUNT(*) FROM class").Scan(&classCount); err != nil {
-		log.Fatalf("Failed to count classes: %v", err)
-	}
-	if err := db.QueryRow("SELECT COUNT(*) FROM subject").Scan(&subjectCount); err != nil {
-		log.Fatalf("Failed to count subjects: %v", err)
-	}
-	if err := db.QueryRow("SELECT COUNT(*) FROM student").Scan(&studentCount); err != nil {
-		log.Fatalf("Failed to count students: %v", err)
-	}
+func AttendanceDataInsert(db *sql.DB, n int) {
+    gofakeit.Seed(0)
 
-	// Prepare insert statements
-	stmtRes, err := db.Prepare(`
-		INSERT INTO attendance_resource (batch_id, class_id, subject_id, attendance_date, hour)
-		VALUES (?, ?, ?, ?, ?)
-	`)
-	if err != nil {
-		log.Fatalf("Prepare attendance_resource failed: %v", err)
-	}
-	defer stmtRes.Close()
+    // Fetch all class-semester relationships
+    classRows, err := db.Query(`
+        SELECT c.class_id, c.semester_id, s.subject_cluster_id
+        FROM class c
+        JOIN semester s ON c.semester_id = s.semester_id
+        ORDER BY c.class_id
+    `)
+    if err != nil {
+        log.Fatalf("Failed to fetch class-semester info: %v", err)
+    }
+    defer classRows.Close()
 
-	stmtInfo, err := db.Prepare(`
-		INSERT INTO attendance_info (attendance_res_id, student_id, status)
-		VALUES (?, ?, ?)
-	`)
-	if err != nil {
-		log.Fatalf("Prepare attendance_info failed: %v", err)
-	}
-	defer stmtInfo.Close()
+    type ClassInfo struct {
+        ClassID           int
+        SemesterID        int
+        SubjectClusterID  int
+    }
 
-	gofakeit.Seed(0)
+    var classes []ClassInfo
+    for classRows.Next() {
+        var ci ClassInfo
+        if err := classRows.Scan(&ci.ClassID, &ci.SemesterID, &ci.SubjectClusterID); err != nil {
+            log.Fatalf("Scan failed: %v", err)
+        }
+        classes = append(classes, ci)
+    }
 
-	// Number of attendance sessions
-	totalSessions := 25
-	classID := 10
+    // Prepare insert statements
+    stmtRes, err := db.Prepare(`
+        INSERT INTO attendance_resource (batch_id, class_id, subject_id, attendance_date, hour)
+        VALUES (?, ?, ?, ?, ?)
+    `)
+    if err != nil {
+        log.Fatalf("Prepare attendance_resource failed: %v", err)
+    }
+    defer stmtRes.Close()
 
-	for i := 1; i <= totalSessions; i++ {
+    stmtInfo, err := db.Prepare(`
+        INSERT INTO attendance_info (attendance_res_id, student_id, status)
+        VALUES (?, ?, ?)
+    `)
+    if err != nil {
+        log.Fatalf("Prepare attendance_info failed: %v", err)
+    }
+    defer stmtInfo.Close()
 
-		//batchID := gofakeit.Number(1,5)
-		//batchID := (i % 5) + 1
-		batchID := 1
-		//classID := gofakeit.Number(1, classCount)
-		// if i%5 == 0 {
-		// 	classID = (classID % 200) + 1
-		// }
-		//classID = 167
-		subjectID := gofakeit.Number(1, subjectCount)
-		//subjectID := 1
-		hour := gofakeit.Number(1, 6)
-		//hour := 1
-		//date := gofakeit.DateRange(time.Now().AddDate(0, 0, -30), time.Now()).Format("2006-01-02")
+    // Loop through every class
+    for _, ci := range classes {
+        // Get batch_id from one of the students in that class (since same branch)
+        var batchID int
+        err := db.QueryRow(`
+            SELECT DISTINCT batch_id
+            FROM student
+            WHERE class_id = ?
+            LIMIT 1
+        `, ci.ClassID).Scan(&batchID)
+        if err != nil {
+            log.Printf("No batch found for class %d: %v", ci.ClassID, err)
+            continue
+        }
 
-		start := time.Date(2025, 8, 1, 0, 0, 0, 0, time.Local)
-		end := time.Date(2025, 9, 30, 23, 59, 59, 0, time.Local)
-		date := gofakeit.DateRange(start, end).Format("2006-01-02")
+        // Get all subject IDs linked to that class’s subject cluster
+        subjRows, err := db.Query(`
+            SELECT subject_id
+            FROM subject_cluster_map
+            WHERE subject_cluster_id = ?
+        `, ci.SubjectClusterID)
+        if err != nil {
+            log.Printf("Failed to fetch subjects for cluster %d: %v", ci.SubjectClusterID, err)
+            continue
+        }
 
-		// Insert attendance session
-		res, err := stmtRes.Exec(batchID, classID, subjectID, date, hour)
-		if err != nil {
-			log.Printf("Insert attendance_resource failed: %v", err)
-			continue
-		}
+        var subjectIDs []int
+        for subjRows.Next() {
+            var sid int
+            subjRows.Scan(&sid)
+            subjectIDs = append(subjectIDs, sid)
+        }
+        subjRows.Close()
 
-		attendanceResID, _ := res.LastInsertId()
+        if len(subjectIDs) == 0 {
+            log.Printf("No subjects found for cluster %d (class %d)", ci.SubjectClusterID, ci.ClassID)
+            continue
+        }
 
-		// Retrieve students belonging to that class
-		//rows, err := db.Query("SELECT student_id FROM student WHERE class_id = ? and batch_id = ?", classID, batchID)
-		rows, err := db.Query("SELECT student_id FROM student WHERE class_id = ? and batch_id = ? and student_id = 1168", classID, batchID)
-		if err != nil {
-			log.Printf("Failed to fetch students for class %d: %v", classID, err)
-			continue
-		}
+        // Get all students who are or were in this class
+        studRows, err := db.Query(`
+            SELECT DISTINCT student_id
+            FROM student_class
+            WHERE class_id = ?
+        `, ci.ClassID)
+        if err != nil {
+            log.Printf("Failed to fetch students for class %d: %v", ci.ClassID, err)
+            continue
+        }
 
-		for rows.Next() {
-			var studentID int = 1168
+        var studentIDs []int
+        for studRows.Next() {
+            var sid int
+            studRows.Scan(&sid)
+            studentIDs = append(studentIDs, sid)
+        }
+        studRows.Close()
 
-			// if err := rows.Scan(&studentID); err != nil {
-			// 	log.Printf("Scan student failed: %v", err)
-			// 	continue
-			// }
-			
-			
-			// Randomly decide attendance (80% present, 20% absent)
-			status := 1
-			if gofakeit.Number(1, 100) > 80 {
-				status = 0
-			}
+        if len(studentIDs) == 0 {
+            log.Printf("No students found for class %d", ci.ClassID)
+            continue
+        }
 
-			_, err = stmtInfo.Exec(attendanceResID, studentID, status)
-			if err != nil {
-				log.Printf("Insert attendance_info failed for student %d: %v", studentID, err)
-			}
-		}
-		rows.Close()
+        // Generate n attendance sessions per subject
+        for _, subjectID := range subjectIDs {
+            for i := 0; i < n; i++ {
+                hour := gofakeit.Number(1, 6)
+                start := time.Date(2025, 8, 1, 0, 0, 0, 0, time.Local)
+                end := time.Date(2025, 9, 30, 23, 59, 59, 0, time.Local)
+                date := gofakeit.DateRange(start, end).Format("2006-01-02")
 
-		fmt.Printf("Inserted attendance session %d | Class: %d | Subject: %d | Date: %s | Hour: %d\n",
-			i, classID, subjectID, date, hour)
-	}
+                res, err := stmtRes.Exec(batchID, ci.ClassID, subjectID, date, hour)
+                if err != nil {
+                    log.Printf("Insert attendance_resource failed (class %d, subject %d): %v", ci.ClassID, subjectID, err)
+                    continue
+                }
 
-	fmt.Println("✅ Dummy attendance data inserted successfully.")
+                attendanceResID, _ := res.LastInsertId()
+
+                // Add attendance entries for each student
+                for _, studentID := range studentIDs {
+                    status := 1
+                    if gofakeit.Number(1, 100) > 80 {
+                        status = 0
+                    }
+
+                    _, err = stmtInfo.Exec(attendanceResID, studentID, status)
+                    if err != nil {
+                        log.Printf("Insert attendance_info failed (student %d): %v", studentID, err)
+                    }
+                }
+
+                fmt.Printf("✅ Inserted session for Class %d | Subject %d | Students %d | Date: %s | Hour: %d\n",
+                    ci.ClassID, subjectID, len(studentIDs), date, hour)
+            }
+        }
+    }
+
+    fmt.Println("🎯 Attendance data inserted for all classes and subjects successfully.")
 }
+
