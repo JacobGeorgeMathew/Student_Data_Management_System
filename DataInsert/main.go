@@ -19,7 +19,8 @@ func main()  {
 	}
 	defer db.Close()
 
-	insert.StudentDataInsert(db,5);
+	insert.StudentDataInsert(db,10);
 	//insert.TeacherDataInsert(db);
 	//insert.AttendanceDataInsert(db,2);
+	//insert.InsertAttendanceForClass(db,10,10);
 }

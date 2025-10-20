@@ -397,3 +397,129 @@ func AttendanceDataInsert(db *sql.DB, n int) {
     fmt.Println("🎯 Attendance data inserted for all classes and subjects successfully.")
 }
 
+func InsertAttendanceForClass(db *sql.DB, classID int, n int) {
+    gofakeit.Seed(0)
+
+    // 1️⃣ Get semester and subject cluster for this class
+    var semesterID, subjectClusterID int
+    err := db.QueryRow(`
+        SELECT c.semester_id, s.subject_cluster_id
+        FROM class c
+        JOIN semester s ON c.semester_id = s.semester_id
+        WHERE c.class_id = ?
+    `, classID).Scan(&semesterID, &subjectClusterID)
+    if err != nil {
+        log.Fatalf("Failed to fetch semester/cluster for class %d: %v", classID, err)
+    }
+
+    // 2️⃣ Get batch_id (from any student in this class)
+    var batchID int
+    err = db.QueryRow(`
+        SELECT DISTINCT batch_id
+        FROM student
+        WHERE class_id = ?
+        LIMIT 1
+    `, classID).Scan(&batchID)
+    if err != nil {
+        log.Fatalf("No batch found for class %d: %v", classID, err)
+    }
+
+    // 3️⃣ Get all subjects for this class (based on cluster)
+    subjRows, err := db.Query(`
+        SELECT subject_id
+        FROM subject_cluster_map
+        WHERE subject_cluster_id = ?
+    `, subjectClusterID)
+    if err != nil {
+        log.Fatalf("Failed to fetch subjects for cluster %d: %v", subjectClusterID, err)
+    }
+
+    var subjectIDs []int
+    for subjRows.Next() {
+        var sid int
+        subjRows.Scan(&sid)
+        subjectIDs = append(subjectIDs, sid)
+    }
+    subjRows.Close()
+
+    if len(subjectIDs) == 0 {
+        log.Fatalf("No subjects found for cluster %d (class %d)", subjectClusterID, classID)
+    }
+
+    // 4️⃣ Get all students (current + past) who belong to this class
+    studRows, err := db.Query(`
+        SELECT DISTINCT student_id
+        FROM student_class
+        WHERE class_id = ?
+    `, classID)
+    if err != nil {
+        log.Fatalf("Failed to fetch students for class %d: %v", classID, err)
+    }
+
+    var studentIDs []int
+    for studRows.Next() {
+        var sid int
+        studRows.Scan(&sid)
+        studentIDs = append(studentIDs, sid)
+    }
+    studRows.Close()
+
+    if len(studentIDs) == 0 {
+        log.Fatalf("No students found for class %d", classID)
+    }
+
+    // 5️⃣ Prepare insert statements
+    stmtRes, err := db.Prepare(`
+        INSERT INTO attendance_resource (batch_id, class_id, subject_id, attendance_date, hour)
+        VALUES (?, ?, ?, ?, ?)
+    `)
+    if err != nil {
+        log.Fatalf("Prepare attendance_resource failed: %v", err)
+    }
+    defer stmtRes.Close()
+
+    stmtInfo, err := db.Prepare(`
+        INSERT INTO attendance_info (attendance_res_id, student_id, status)
+        VALUES (?, ?, ?)
+    `)
+    if err != nil {
+        log.Fatalf("Prepare attendance_info failed: %v", err)
+    }
+    defer stmtInfo.Close()
+
+    // 6️⃣ Insert attendance for all subjects
+    for _, subjectID := range subjectIDs {
+        for i := 0; i < n; i++ {
+            hour := gofakeit.Number(1, 6)
+            start := time.Date(2025, 8, 1, 0, 0, 0, 0, time.Local)
+            end := time.Date(2025, 9, 30, 23, 59, 59, 0, time.Local)
+            date := gofakeit.DateRange(start, end).Format("2006-01-02")
+
+            res, err := stmtRes.Exec(batchID, classID, subjectID, date, hour)
+            if err != nil {
+                log.Printf("Insert attendance_resource failed (subject %d): %v", subjectID, err)
+                continue
+            }
+
+            attendanceResID, _ := res.LastInsertId()
+
+            // Add attendance entries for each student
+            for _, studentID := range studentIDs {
+                status := 1
+                if gofakeit.Number(1, 100) > 80 {
+                    status = 0
+                }
+
+                _, err = stmtInfo.Exec(attendanceResID, studentID, status)
+                if err != nil {
+                    log.Printf("Insert attendance_info failed (student %d): %v", studentID, err)
+                }
+            }
+
+            fmt.Printf("✅ Class %d | Subject %d | Session %d/%d | Students: %d | Date: %s | Hour: %d\n",
+                classID, subjectID, i+1, n, len(studentIDs), date, hour)
+        }
+    }
+
+    fmt.Printf("🎯 Attendance inserted successfully for Class %d (Total Subjects: %d)\n", classID, len(subjectIDs))
+}
