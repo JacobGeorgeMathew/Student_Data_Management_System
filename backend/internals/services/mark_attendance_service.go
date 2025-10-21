@@ -30,11 +30,15 @@ func (s *markAttendanceService) GetSessionInfo(req *models.SessionInfoRequest) (
 		return nil, err
 	}
 
+	fmt.Println("ClusterID: ",sessionInfo.ClusterID)
+
 	// Get subjects for the cluster
-	subjects, err := s.repo.GetSubjectsByCluster(sessionInfo.SemesterID)
+	subjects, err := s.repo.GetSubjectsByCluster(sessionInfo.ClusterID)
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("Subjects: ",subjects)
 
 	// Build complete response
 	response := &models.SessionInfoResponse{

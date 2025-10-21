@@ -21,6 +21,7 @@ type SubjectInfo struct {
 type SessionInfoResponse struct {
 	BranchID    int           `json:"branch_id"`
 	BatchID     int           `json:"batch_id"`
+	ClusterID   int 					`json:"cluster_id"`
 	SemesterNum int           `json:"semester_num"`
 	Section     string        `json:"section"`
 	Date        string        `json:"date"`

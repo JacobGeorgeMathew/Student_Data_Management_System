@@ -54,6 +54,7 @@ func (r *markAttendanceRepo) GetSessionInfo(branchID, semesterNum int, section s
 	return &models.SessionInfoResponse{
 		SemesterID: semesterID,
 		ClassID:    classID,
+		ClusterID: clusterID,
 	}, nil
 }
 

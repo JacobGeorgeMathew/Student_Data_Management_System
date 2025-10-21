@@ -220,3 +220,15 @@ Plan:
 11. Then backend sends success message to the frontend.
 
 So this is my plan.So i am not telling this plan to you to write the code , instead i wanted you to thoroughly review this plan and tell me, is  there any issues in this plan. Suggest your opinions on this plan and tell me if there is  any improvements  needed . Then create a precise and correct prompt, to give it to an AI , so that it generates the proper code, for implementing this feature  in my project . Create seperate prompts for generating the backend code and frontend code .
+
+
+SELECT 
+			sem.semester_id,
+			sem.subject_cluster_id,
+			c.class_id
+		FROM semester sem
+		INNER JOIN class c ON c.semester_id = sem.semester_id
+		WHERE sem.branch_id = 1 
+			AND sem.sem_num = 2
+			AND c.section = 'A'
+		LIMIT 1
