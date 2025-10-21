@@ -104,7 +104,7 @@ func StudentDataInsert(db *sql.DB, n int) {
                 SELECT c.class_id, s.sem_num
                 FROM class c
                 JOIN semester s ON c.semester_id = s.semester_id
-                WHERE s.branch_id = ? AND s.sem_num < ?
+                WHERE s.branch_id = ? AND s.sem_num <= ?
             `, ci.BranchID, ci.SemNum)
             if err != nil {
                 log.Printf("Fetch previous classes failed: %v", err)
@@ -147,7 +147,7 @@ func TeacherDataInsert(db *sql.DB) {
 	}
 
 	// Number of dummy teachers
-	totalTeachers := 50
+	totalTeachers := 100
 	totalTeachers = totalTeachers + count
 
 	// Prepare insert statements
